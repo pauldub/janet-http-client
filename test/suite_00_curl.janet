@@ -12,7 +12,9 @@
                    (if (= outer-easy-handle (curl/easy-handle))
                      (error "Easy handle is not properly fiber scoped")))))))
 
-(:reset (curl/easy-handle))
+(try
+  (-> (curl/easy-handle) (curl/reset))
+  ([err] (error "Failed to reset easy handle: " err)))
 
 (try
   (do

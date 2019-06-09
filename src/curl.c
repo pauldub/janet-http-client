@@ -172,6 +172,10 @@ static const JanetReg cfuns[] = {
 		"(curl/perform handle)\n\n"
 		"Perform a blocking file transfer."
 	},
+	{"reset", cfun_easy_handle_reset,
+		"(curl/reset handle)\n\n"
+		"Resets a easy handle."
+	},
 	{NULL, NULL, NULL},
 };
 

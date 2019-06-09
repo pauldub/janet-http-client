@@ -1,3 +1,7 @@
+(defn easy-handle []
+  "Helper function to get current value of dynamic variable `:curl-easy-handle`."
+  (dyn :curl-easy-handle))
+
 (defmacro with-easy-handle [& body]
   "Wraps body with a fiber scoped CURL easy_handle."
   (with-syms [h]

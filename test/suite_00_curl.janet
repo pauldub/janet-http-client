@@ -6,6 +6,8 @@
 (let [outer-easy-handle (curl/easy-handle)]
   (resume
     (fiber/new (fn []
+                 (if (not= nil (curl/easy-handle))
+                   (error "Unexpected Fiber curl-easy-handle"))
                  (curl/with-easy-handle
                    (if (= outer-easy-handle (curl/easy-handle))
                      (error "Easy handle is not properly fiber scoped")))))))

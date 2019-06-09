@@ -69,6 +69,11 @@ static Janet cfun_easy_handle(int32_t argc, Janet *argv) {
 	JanetFiber *fiber = janet_current_fiber();
 	JanetTable *env = fiber->env;
 
+	if(NULL == env) {
+		fiber->env = janet_table(1);
+		env = fiber->env;
+	}
+
 	Janet current_handle = janet_table_get(env, janet_wrap_string("curl-easy-handle"));
 
 	if(janet_checktype(current_handle, JANET_ABSTRACT) > 0) {

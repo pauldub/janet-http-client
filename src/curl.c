@@ -59,8 +59,6 @@ static Janet cfun_make_easy_handle(int32_t argc, Janet *argv) {
 	(void) argv;
 
 	janet_fixarity(argc, 0);
-	// TODO: allow a fiber as argv[0]
-	// janet_arity(argc, 0, 1);
 
 	cfun_curl_init(0, NULL);
 
@@ -97,8 +95,9 @@ static Janet cfun_easy_handle_reset(int32_t argc, Janet *argv) {
 
 	curl_easy_reset(wrapper->easy_handle);
 
-	return janet_wrap_nil();
+	return janet_wrap_abstract(wrapper);
 }
+
 static Janet cfun_easy_handle_setopt(int32_t argc, Janet *argv) {
 	janet_fixarity(argc, 3);
 
@@ -117,7 +116,7 @@ static Janet cfun_easy_handle_setopt(int32_t argc, Janet *argv) {
 		janet_panicf("failed to set option: %s", curl_easy_strerror(res));
 	}
 
-	return janet_wrap_nil();
+	return janet_wrap_abstract(wrapper);
 }
 
 static Janet cfun_easy_handle_perform(int32_t argc, Janet *argv) {
@@ -133,7 +132,7 @@ static Janet cfun_easy_handle_perform(int32_t argc, Janet *argv) {
 		janet_panicf("failed to perform request: %s", curl_easy_strerror(res));
 	}
 
-	return janet_wrap_nil();
+	return janet_wrap_abstract(wrapper);
 }
 
 static JanetMethod easy_handle_methods[] = {

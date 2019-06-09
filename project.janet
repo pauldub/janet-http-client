@@ -11,6 +11,7 @@
   :name "curl"
   :cflags [;default-cflags]
   :lflags [;default-lflags ;curl-lflags]
+  :embedded ["src/curl.janet"]
   :source @["src/curl.c"])
 
 (declare-source

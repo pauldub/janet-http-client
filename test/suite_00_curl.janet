@@ -1,12 +1,17 @@
 (import build/curl :as curl)
 
-(curl/init)
+(if (= nil (dyn :curl-easy-handle))
+  (error "Missing default value for curl-easy-handle"))
 
-(if (not= (curl/easy-handle) (curl/easy-handle))
-  (error "Different CURL easy handles returned for the same fiber"))
+(let [outer-easy-handle (dyn :curl-easy-handle)]
+  (resume
+    (fiber/new (fn []
+                 (curl/with-easy-handle
+                   (if (= outer-easy-handle (dyn :curl-easy-handle))
+                     (error "Easy handle is not properly fiber scoped")))))))
 
-(let [outer-handle (curl/easy-handle)
-      f (fiber/new (fn [] (if (= outer-handle (curl/easy-handle))
-                            (error "Same handle for two fibers"))))]
-  (resume f))
-  
+(try
+  (do
+    (:set-opt (dyn :curl-easy-handle) :bad-option nil)
+    (error "unhandled easy handle set-opt key"))
+  ([err]))

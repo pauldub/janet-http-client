@@ -5,6 +5,12 @@
 
 #include <curl/curl.h>
 
+
+/* embedded source */
+
+extern const unsigned char *src___curl_embed;
+extern size_t src___curl_embed_size;
+
 static int CURL_INITIALIZED = 0;
 
 static Janet cfun_curl_init(int32_t argc, Janet *argv) {
@@ -24,7 +30,6 @@ static Janet cfun_curl_init(int32_t argc, Janet *argv) {
 
 typedef struct easy_handle_wrapper {
 	CURL *easy_handle;
-	JanetFiber *fiber;
 } easy_handle_wrapper_t;
 
 static int easy_handle_gc(void *x, size_t s) {
@@ -38,22 +43,11 @@ static int easy_handle_gc(void *x, size_t s) {
 	return 0;
 }
 
-static int easy_handle_mark(void *x, size_t s) {
-	(void) s;
-	easy_handle_wrapper_t *w = (easy_handle_wrapper_t *)x;
-
-	if (NULL != w->fiber) {
-		janet_mark(janet_wrap_fiber(w->fiber));
-	}
-
-	return 0;
-}
-
 static Janet easy_handle_get(void*, Janet);
 static const JanetAbstractType easy_handle_type = {
 	"curl/easy-handle",
 	easy_handle_gc, // gc
-	easy_handle_mark, // gcmark
+	NULL, // gcmark
 	easy_handle_get, // get
 	NULL, // put
 	NULL, // marshal
@@ -61,7 +55,7 @@ static const JanetAbstractType easy_handle_type = {
 	NULL  // tostring
 };
 
-static Janet cfun_easy_handle(int32_t argc, Janet *argv) {
+static Janet cfun_make_easy_handle(int32_t argc, Janet *argv) {
 	(void) argv;
 
 	janet_fixarity(argc, 0);
@@ -69,23 +63,6 @@ static Janet cfun_easy_handle(int32_t argc, Janet *argv) {
 	// janet_arity(argc, 0, 1);
 
 	cfun_curl_init(0, NULL);
-
-	JanetFiber *fiber = janet_current_fiber();
-	JanetTable *env = fiber->env;
-
-	if(NULL == env) {
-		fiber->env = janet_table(1);
-		env = fiber->env;
-	}
-
-	Janet current_handle = janet_table_get(env, janet_wrap_string("curl-easy-handle"));
-
-	if(janet_checktype(current_handle, JANET_ABSTRACT) > 0) {
-		easy_handle_wrapper_t *wrapper = janet_unwrap_abstract(current_handle);
-
-		curl_easy_reset(wrapper->easy_handle);
-		return current_handle;
-	}
 
 	CURL *easy_handle = curl_easy_init();
 	if(NULL == easy_handle) {
@@ -95,12 +72,9 @@ static Janet cfun_easy_handle(int32_t argc, Janet *argv) {
 	easy_handle_wrapper_t *wrapper = (easy_handle_wrapper_t*)janet_abstract(&easy_handle_type, sizeof(*wrapper));
 
 	wrapper->easy_handle = easy_handle;
-	wrapper->fiber = fiber;
 
 	Janet val = janet_wrap_abstract(wrapper);
 	janet_gcroot(val);
-
-	janet_table_put(env, janet_wrap_string("curl-easy-handle"), val);
 
 	return val;
 }
@@ -113,11 +87,23 @@ static CURLoption easy_handle_parse_opt(const char *key) {
 	janet_panicf("unknown option, got %s", key);
 }
 
+static Janet cfun_easy_handle_reset(int32_t argc, Janet *argv) {
+	janet_fixarity(argc, 1);
+
+	easy_handle_wrapper_t *wrapper = janet_getabstract(argv, 0, &easy_handle_type);
+	if(wrapper->easy_handle == NULL) {
+		janet_panic("easy_handle has been destroyed and cannot be used");
+	}
+
+	curl_easy_reset(wrapper->easy_handle);
+
+	return janet_wrap_nil();
+}
 static Janet cfun_easy_handle_setopt(int32_t argc, Janet *argv) {
 	janet_fixarity(argc, 3);
 
 	easy_handle_wrapper_t *wrapper = janet_getabstract(argv, 0, &easy_handle_type);
-	if(wrapper->easy_handle == NULL || wrapper->fiber == NULL) {
+	if(wrapper->easy_handle == NULL) {
 		janet_panic("easy_handle has been destroyed and cannot be used");
 	}
 
@@ -138,19 +124,20 @@ static Janet cfun_easy_handle_perform(int32_t argc, Janet *argv) {
 	janet_fixarity(argc, 1);
 
 	easy_handle_wrapper_t *wrapper = janet_getabstract(argv, 0, &easy_handle_type);
-	if(wrapper->easy_handle == NULL || wrapper->fiber == NULL) {
+	if(wrapper->easy_handle == NULL) {
 		janet_panic("easy_handle has been destroyed and cannot be used");
 	}
 
 	CURLcode res = curl_easy_perform(wrapper->easy_handle);
 	if(CURLE_OK != res) {
-		janet_panicf("failed to set option: %s", curl_easy_strerror(res));
+		janet_panicf("failed to perform request: %s", curl_easy_strerror(res));
 	}
 
 	return janet_wrap_nil();
- }
+}
 
 static JanetMethod easy_handle_methods[] = {
+	{"reset", cfun_easy_handle_reset},
 	{"set-opt", cfun_easy_handle_setopt},
 	{"perform", cfun_easy_handle_perform},
 	{NULL, NULL}
@@ -158,6 +145,7 @@ static JanetMethod easy_handle_methods[] = {
 
 static Janet easy_handle_get(void* p, Janet key) {
 	(void) p;
+
 	if(!janet_checktype(key, JANET_KEYWORD)) {
 		janet_panicf("unexpected keyword, got %v", key);
 	}
@@ -172,10 +160,9 @@ static const JanetReg cfuns[] = {
 		"(curl/init)\n\n"
 		"Initializes CURL, must be called once for the whole program."
 	},
-	{"easy-handle", cfun_easy_handle,
-		"(curl/easy-handle)\n\n"
-		"Returns a CURL easy handle associated with the current fiber.\n"
-		"This method recycles the handle for the lifecycle of the fiber, it will always reset it before returning it."
+	{"make-easy-handle", cfun_make_easy_handle,
+		"(curl/make-easy-handle)\n\n"
+		"Returns a new CURL easy handle.\n"
 	},
 	{"set-opt", cfun_easy_handle_setopt,
 		"(curl/set-opt handle key value)\n\n"
@@ -190,4 +177,8 @@ static const JanetReg cfuns[] = {
 
 JANET_MODULE_ENTRY(JanetTable *env) {
 	janet_cfuns(env, "curl", cfuns);
+
+	// Set a default curl-easy-handle
+	janet_setdyn("curl-easy-handle", cfun_make_easy_handle(0, NULL));
+	janet_dobytes(env, src___curl_embed, src___curl_embed_size, "[curl/curl.janet]", NULL);
 }

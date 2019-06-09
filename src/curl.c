@@ -8,6 +8,8 @@
 static int CURL_INITIALIZED = 0;
 
 static Janet cfun_curl_init(int32_t argc, Janet *argv) {
+	(void) argv;
+
 	janet_fixarity(argc, 0);
 
 	if(CURL_INITIALIZED == 1) {
@@ -60,6 +62,8 @@ static const JanetAbstractType easy_handle_type = {
 };
 
 static Janet cfun_easy_handle(int32_t argc, Janet *argv) {
+	(void) argv;
+
 	janet_fixarity(argc, 0);
 	// TODO: allow a fiber as argv[0]
 	// janet_arity(argc, 0, 1);
@@ -92,7 +96,6 @@ static Janet cfun_easy_handle(int32_t argc, Janet *argv) {
 
 	wrapper->easy_handle = easy_handle;
 	wrapper->fiber = fiber;
-
 
 	Janet val = janet_wrap_abstract(wrapper);
 	janet_gcroot(val);

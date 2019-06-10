@@ -128,7 +128,7 @@ static size_t curl_setopt_wrap_janet_function(
 
 	Janet res = janet_call(func, 3, argv);
 	if (!janet_checktype(res, JANET_NUMBER)) {
-		janet_panic("expected number return value");
+		janet_panic_type(res, janet_type(res), JANET_NUMBER); 
 	}
 
 	return (size_t)janet_unwrap_number(res);
@@ -231,7 +231,7 @@ static Janet easy_handle_get(void* p, Janet key) {
 	(void) p;
 
 	if (!janet_checktype(key, JANET_KEYWORD)) {
-		janet_panicf("unexpected keyword, got %v", key);
+		janet_panic_type(key, janet_type(key), JANET_NUMBER); 
 	}
 
 	return janet_getmethod(janet_unwrap_keyword(key), easy_handle_methods);

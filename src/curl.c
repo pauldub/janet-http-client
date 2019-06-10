@@ -155,6 +155,9 @@ static Janet cfun_easy_handle_setopt(int32_t argc, Janet *argv) {
 	case JANET_NUMBER:
 		res = curl_easy_setopt(wrapper->easy_handle, opt, (long)janet_unwrap_number(opt_value));
 		break;
+	case JANET_BOOLEAN:
+		res = curl_easy_setopt(wrapper->easy_handle, opt, (long)janet_unwrap_boolean(opt_value));
+		break;
 	case JANET_STRING:
 		res = curl_easy_setopt(wrapper->easy_handle, opt, janet_unwrap_string(opt_value));
 		break;

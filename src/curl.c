@@ -128,7 +128,7 @@ static size_t curl_setopt_wrap_janet_function(
 
 	Janet res = janet_call(func, 3, argv);
 	if (!janet_checktype(res, JANET_NUMBER)) {
-		janet_panic_type(res, janet_type(res), JANET_NUMBER); 
+		janet_panic_type(res, 0, JANET_NUMBER); 
 	}
 
 	return (size_t)janet_unwrap_number(res);
@@ -174,7 +174,7 @@ static Janet cfun_easy_handle_setopt(int32_t argc, Janet *argv) {
 		res = curl_easy_setopt(wrapper->easy_handle, opt, curl_setopt_wrap_janet_function);
 		break;
 	default:
-		janet_panic("unsupported value type");
+		janet_panicf("unsupported value type: %T", opt_value);
 	}
 
 
@@ -237,7 +237,7 @@ static Janet easy_handle_get(void* p, Janet key) {
 	(void) p;
 
 	if (!janet_checktype(key, JANET_KEYWORD)) {
-		janet_panic_type(key, janet_type(key), JANET_NUMBER); 
+		janet_panic_type(key, 0, JANET_NUMBER); 
 	}
 
 	return janet_getmethod(janet_unwrap_keyword(key), easy_handle_methods);

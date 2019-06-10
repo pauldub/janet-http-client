@@ -58,7 +58,22 @@
         :CURLOPT_WRITEFUNCTION :CURLOPT_WRITEDATA 
         (fn [buf size nitems]
           (set called true)
-          nitems))
+          (* size nitems)))
+      (:perform))
+  (unless called
+    (error "write callback was not called")))
+
+# header callback
+
+(do
+  (var called false)
+  (-> (curl/easy-handle)
+      (:set-opt :CURLOPT_URL "https://example.com")
+      (:set-opt-function 
+        :CURLOPT_HEADERFUNCTION :CURLOPT_HEADERDATA 
+        (fn [buf size nitems]
+          (set called true)
+          (* size nitems)))
       (:perform))
   (unless called
     (error "write callback was not called")))

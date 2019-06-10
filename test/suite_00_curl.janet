@@ -31,6 +31,20 @@
     (error "expected set-opt error"))
   ([err]))
 
+# string value
+
+(-> (curl/easy-handle)
+    (:set-opt :CURLOPT_URL "https://janet-lang.org"))
+
+(curl/reset (curl/easy-handle))
+
+# buffer value
+
+(-> (curl/easy-handle)
+    (:set-opt :CURLOPT_URL @"https://janet-lang.org"))
+
+(curl/reset (curl/easy-handle))
+
 # long value
 (-> (curl/easy-handle)
     (:set-opt :CURLOPT_PORT 9999))

@@ -198,12 +198,11 @@ static Janet cfun_easy_handle_setopt_function(int32_t argc, Janet *argv) {
 	Janet function_argv[3] = {
 		argv[0], argv[1], argv[3],
 	};
+	cfun_easy_handle_setopt(3, function_argv);
 
 	Janet data_argv[3] = {
 		argv[0], argv[2], janet_wrap_pointer(function),
 	};
-
-	cfun_easy_handle_setopt(3, function_argv);
 	cfun_easy_handle_setopt(3, data_argv);
 
 	return janet_wrap_abstract(wrapper);
